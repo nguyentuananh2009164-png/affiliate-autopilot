@@ -1,6 +1,6 @@
 // Dán Project URL và Publishable key (hoặc anon key cũ) từ Supabase vào đây.
-const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_PUBLIC_KEY";
+const SUPABASE_URL = "https://xhakjulqswizhzxuolst.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_pqCBmg1IwpxyskubBMsw9Q_IAKfck4E";
 
 const $ = (id) => document.getElementById(id);
 const configured = !SUPABASE_URL.startsWith("YOUR_") && !SUPABASE_ANON_KEY.startsWith("YOUR_");
