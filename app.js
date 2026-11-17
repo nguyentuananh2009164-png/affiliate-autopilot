@@ -167,8 +167,11 @@ $("runAiBtn").onclick = async () => {
     $("aiOutput").textContent = data.output;
     $("aiMessage").textContent = "AI đã hoàn thành nhiệm vụ.";
   } catch (error) {
-    $("aiMessage").textContent =
-      "Lỗi: " + (error.message || "Không kết nối được AI.");
+  $("aiMessage").textContent =
+    "Lỗi: " + (error.message || "Không kết nối được AI.");
+
+  console.error("AI ERROR:", error);
+}
   } finally {
     button.disabled = false;
     button.textContent = "Gửi nhiệm vụ cho AI";
