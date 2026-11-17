@@ -1,89 +1,154 @@
-<!doctype html>
-<html lang="vi">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Affiliate AutoPilot</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
-<body>
-  <header>
-    <div>
-      <h1>Affiliate AutoPilot</h1>
-      <p>Quản lý sản phẩm tiếp thị liên kết</p>
-    </div>
-    <button id="logoutBtn" class="secondary hidden">Đăng xuất</button>
-  </header>
 
-  <main>
-    <section id="configNotice" class="notice">
-      Cần cấu hình Supabase trong app.js trước khi sử dụng.
-    </section>
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
-    <section id="authPanel" class="panel">
-      <h2>Đăng nhập / Tạo tài khoản</h2>
-      <label>Email<input id="email" type="email"></label>
-      <label>Mật khẩu<input id="password" type="password"></label>
-      <div class="actions">
-        <button id="signupBtn">Tạo tài khoản</button>
-        <button id="loginBtn" class="secondary">Đăng nhập</button>
-      </div>
-      <p id="authMessage" class="message"></p>
-    </section>
+function getProductInfo(product: any): string {
+  if (typeof product === "string") {
+    return product.trim() || "Chưa cung cấp thông tin sản phẩm.";
+  }
 
-    <section id="appPanel" class="hidden">
-      <section class="stats">
-        <div class="stat"><span>Tổng sản phẩm</span><strong id="totalCount">0</strong></div>
-        <div class="stat"><span>Đang quảng bá</span><strong id="activeCount">0</strong></div>
-        <div class="stat"><span>Hoa hồng dự kiến</span><strong id="commissionTotal">0₫</strong></div>
-      </section>
+  if (!product || typeof product !== "object") {
+    return "Chưa cung cấp thông tin sản phẩm.";
+  }
 
-      <section class="panel">
-        <h2 id="formTitle">Thêm sản phẩm</h2>
-        <form id="productForm">
-          <input id="productId" type="hidden">
-          <label>Tên sản phẩm *<input id="name" required></label>
-          <label>Link sản phẩm<input id="productUrl" type="url"></label>
-          <label>Link Affiliate<input id="affiliateUrl" type="url"></label>
-          <div class="two">
-            <label>Giá (₫)<input id="price" type="number" min="0" value="0"></label>
-            <label>Hoa hồng (₫)<input id="commission" type="number" min="0" value="0"></label>
-          </div>
-          <div class="two">
-            <label>Đánh giá<input id="rating" type="number" min="0" max="5" step="0.1" value="0"></label>
-            <label>Số lượt đánh giá<input id="reviewCount" type="number" min="0" value="0"></label>
-          </div>
-          <label>Danh mục<input id="category"></label>
-          <label>Trạng thái
-            <select id="status">
-              <option value="candidate">Đang cân nhắc</option>
-              <option value="active">Đang quảng bá</option>
-              <option value="paused">Tạm dừng</option>
-            </select>
-          </label>
-          <label>Ghi chú<textarea id="notes" rows="3"></textarea></label>
-          <div class="actions">
-            <button type="submit" id="saveBtn">Lưu sản phẩm</button>
-            <button type="button" id="resetBtn" class="secondary">Làm mới</button>
-          </div>
-          <p id="formMessage" class="message"></p>
-        </form>
-      </section>
+  const fields = [
+    ["Tên sản phẩm", product.name || product.title],
+    ["Giá", product.price],
+    ["Đánh giá", product.rating],
+    ["Lượt đánh giá", product.review_count],
+    ["Mô tả", product.description],
+    ["Ghi chú", product.notes],
+    ["Đường dẫn", product.product_url]
+  ];
 
-      <section class="panel">
-        <div class="listHead">
-          <h2>Sản phẩm của tôi</h2>
-          <input id="search" placeholder="Tìm sản phẩm...">
-        </div>
-        <div id="productList" class="productList">
-          <p>Chưa có sản phẩm.</p>
-        </div>
-      </section>
-    </section>
-  </main>
+  const result = fields
+    .filter(([_, value]) => value !== undefined && value !== null && value !== "")
+    .map(([label, value]) => `${label}: ${value}`)
+    .join("\n");
 
-  <footer>Affiliate AutoPilot · Shopee trước, mở rộng sau</footer>
-  <script src="app.js"></script>
-</body>
-</html>
+  return result || JSON.stringify(product, null, 2);
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  if (req.method !== "POST") {
+    return Response.json(
+      { ok: false, error: "Method not allowed" },
+      { status: 405, headers: corsHeaders }
+    );
+  }
+
+  try {
+    const body = await req.json();
+    const task = String(body.task ?? "").trim();
+    const product = getProductInfo(body.product);
+    let output = "";
+
+    if (task === "evaluate_product") {
+      output = `
+ĐÁNH GIÁ SẢN PHẨM
+=================
+
+THÔNG TIN ĐÃ CUNG CẤP:
+${product}
+
+ƯU ĐIỂM CẦN KIỂM TRA:
+- Mức giá có cạnh tranh không?
+- Mô tả có đầy đủ và rõ ràng không?
+- Đánh giá của khách hàng có đáng tin cậy không?
+- Sản phẩm có đáp ứng nhu cầu thực tế không?
+
+RỦI RO:
+- Chưa xác minh chất lượng thực tế.
+- Chưa xác minh tỷ lệ hoàn hàng.
+- Chưa có dữ liệu hoa hồng và doanh số đáng tin cậy.
+
+KẾT LUẬN:
+Đây là bản đánh giá theo biểu mẫu. Cần kiểm tra thông tin thực tế trước khi quảng bá.
+`;
+    } else if (task === "create_content") {
+      output = `
+NỘI DUNG QUẢNG BÁ SẢN PHẨM
+===========================
+
+THÔNG TIN SẢN PHẨM:
+${product}
+
+MẪU 1 – GIỚI THIỆU:
+Bạn đang tìm hiểu một sản phẩm mới?
+Hãy tham khảo thông tin và đánh giá sản phẩm trước khi quyết định nhé!
+
+MẪU 2 – NHẤN MẠNH NHU CẦU:
+Nếu sản phẩm phù hợp với nhu cầu của bạn, hãy xem kỹ mô tả, giá bán và đánh giá từ người mua.
+
+MẪU 3 – KÊU GỌI TÌM HIỂU:
+Tham khảo thêm thông tin sản phẩm tại đường dẫn được cung cấp. Đừng quên kiểm tra giá và điều kiện mua hàng!
+
+LƯU Ý:
+Hãy bổ sung thông tin đã xác minh trước khi đăng.
+`;
+    } else if (task === "campaign_ideas") {
+      output = `
+ĐỀ XUẤT CHIẾN DỊCH TIẾP THỊ
+===========================
+
+SẢN PHẨM:
+${product}
+
+ĐỐI TƯỢNG:
+- Người có nhu cầu thực tế với sản phẩm.
+- Người đang tìm hiểu các lựa chọn tương tự.
+
+THÔNG ĐIỆP:
+Tập trung vào thông tin hữu ích, ưu điểm đã xác minh và giá trị thực tế.
+
+3 Ý TƯỞNG BÀI ĐĂNG:
+1. Bài giới thiệu: sản phẩm là gì, dành cho ai?
+2. Bài phân tích: ưu điểm, hạn chế và những điều cần biết.
+3. Bài so sánh: so sánh với lựa chọn khác dựa trên dữ liệu thực tế.
+
+CHỈ SỐ THEO DÕI:
+- Lượt xem.
+- Lượt nhấp liên kết.
+- Lượt chuyển đổi.
+- Hoa hồng thực nhận.
+
+KẾ HOẠCH:
+Đăng thử nội dung, theo dõi kết quả rồi điều chỉnh.
+`;
+    } else {
+      return Response.json(
+        { ok: false, error: "Nhiệm vụ không hợp lệ." },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    return Response.json(
+      {
+        ok: true,
+        mode: "offline",
+        task,
+        output
+      },
+      { headers: corsHeaders }
+    );
+
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Server error";
+
+    console.error("OFFLINE FUNCTION ERROR:", message);
+
+    return Response.json(
+      { ok: false, error: message },
+      { status: 500, headers: corsHeaders }
+    );
+  }
+});
