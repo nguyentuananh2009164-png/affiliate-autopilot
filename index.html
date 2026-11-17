@@ -80,6 +80,28 @@
           <p>Chưa có sản phẩm.</p>
         </div>
       </section>
+            <section class="panel" id="aiAssistantPanel">
+        <h2>AI Assistant</h2>
+        <p>Giao nhiệm vụ cho AI xử lý.</p>
+        <label>Nhiệm vụ
+          <select id="aiTask">
+            <option value="evaluate_product">Đánh giá sản phẩm</option>
+            <option value="create_content">Viết nội dung quảng bá</option>
+            <option value="campaign_ideas">Đề xuất chiến dịch</option>
+          </select>
+        </label>
+        <label>Chọn sản phẩm
+          <select id="aiProduct">
+            <option value="">Nhập thông tin thủ công</option>
+          </select>
+        </label>
+        <label>Thông tin sản phẩm
+          <textarea id="aiProductInfo" rows="5"></textarea>
+        </label>
+        <button type="button" id="runAiBtn">Gửi nhiệm vụ cho AI</button>
+        <p id="aiMessage" class="message"></p>
+        <pre id="aiOutput" style="white-space:pre-wrap"></pre>
+      </section>
     </section>
   </main>
 
