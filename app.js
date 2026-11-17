@@ -67,3 +67,119 @@ $("productList").onclick=async e=>{
   if(b.dataset.copy){if(p.affiliate_url)await navigator.clipboard.writeText(p.affiliate_url);else alert("Sản phẩm chưa có link Affiliate.");}
   if(b.dataset.delete&&confirm("Xóa sản phẩm này?")){const {error}=await client.from("products").delete().eq("id",p.id);if(error)alert(error.message);else await refresh();}
 };
+
+// ===== AFFILIATE AUTOPILOT - AI ASSISTANT =====
+
+const aiPanel = document.createElement("section");
+aiPanel.className = "panel";
+aiPanel.id = "aiAssistantPanel";
+
+aiPanel.innerHTML = `
+  <h2>AI Assistant</h2>
+  <p>Giao nhiệm vụ cho AI xử lý.</p>
+
+  <label>Nhiệm vụ
+    <select id="aiTask">
+      <option value="evaluate_product">Đánh giá sản phẩm</option>
+      <option value="create_content">Viết nội dung quảng bá</option>
+      <option value="campaign_ideas">Đề xuất chiến dịch</option>
+    </select>
+  </label>
+
+  <label>Chọn sản phẩm
+    <select id="aiProduct">
+      <option value="">Nhập thông tin thủ công</option>
+    </select>
+  </label>
+
+  <label>Thông tin sản phẩm
+    <textarea id="aiProductInfo" rows="5"
+      placeholder="Nhập tên, giá, danh mục và thông tin sản phẩm..."></textarea>
+  </label>
+
+  <button type="button" id="runAiBtn">Gửi nhiệm vụ cho AI</button>
+  <p id="aiMessage" class="message"></p>
+  <pre id="aiOutput" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
+`;
+
+$("appPanel").appendChild(aiPanel);
+
+function updateAiProductList() {
+  const select = $("aiProduct");
+  if (!select) return;
+
+  select.innerHTML = '<option value="">Nhập thông tin thủ công</option>';
+
+  products.forEach(p => {
+    const option = document.createElement("option");
+    option.value = p.id;
+    option.textContent = p.name;
+    select.appendChild(option);
+  });
+}
+
+$("aiProduct").onchange = () => {
+  const p = products.find(x => x.id === $("aiProduct").value);
+  if (!p) return;
+
+  $("aiProductInfo").value = JSON.stringify({
+    name: p.name,
+    price: p.price,
+    commission: p.commission,
+    category: p.category,
+    rating: p.rating,
+    review_count: p.review_count,
+    product_url: p.product_url,
+    notes: p.notes
+  }, null, 2);
+};
+
+$("runAiBtn").onclick = async () => {
+  if (!client) return;
+
+  const button = $("runAiBtn");
+  button.disabled = true;
+  button.textContent = "Đang xử lý...";
+
+  $("aiMessage").textContent = "Đang kết nối AI...";
+  $("aiOutput").textContent = "";
+
+  try {
+    const selected = products.find(
+      p => p.id === $("aiProduct").value
+    );
+
+    const product = selected || $("aiProductInfo").value.trim();
+
+    const { data, error } = await client.functions.invoke(
+      "ai-assistant",
+      {
+        body: {
+          task: $("aiTask").value,
+          product
+        }
+      }
+    );
+
+    if (error) throw error;
+    if (!data?.ok) throw new Error(data?.error || "AI chưa phản hồi.");
+
+    $("aiOutput").textContent = data.output;
+    $("aiMessage").textContent = "AI đã hoàn thành nhiệm vụ.";
+  } catch (error) {
+    $("aiMessage").textContent =
+      "Lỗi: " + (error.message || "Không kết nối được AI.");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Gửi nhiệm vụ cho AI";
+  }
+};
+
+// Cập nhật danh sách sản phẩm sau mỗi lần tải dữ liệu.
+const originalRefreshForAI = refresh;
+refresh = async function() {
+  await originalRefreshForAI();
+  updateAiProductList();
+};
+
+updateAiProductList();
