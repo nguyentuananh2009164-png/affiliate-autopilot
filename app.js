@@ -166,12 +166,18 @@ $("runAiBtn").onclick = async () => {
 
     $("aiOutput").textContent = data.output;
     $("aiMessage").textContent = "AI đã hoàn thành nhiệm vụ.";
-  } catch (error) {
-  $("aiMessage").textContent =
-    "Lỗi: " + (error.message || "Không kết nối được AI.");
+    } catch (error) {
+    let detail = error.message || "Không kết nối được AI.";
 
-  console.error("AI ERROR:", error);
-}
+    if (error.context) {
+      try {
+        const response = await error.context.json();
+        detail = response.error || JSON.stringify(response);
+      } catch (_) {}
+    }
+
+    $("aiMessage").textContent = "Lỗi: " + detail;
+    console.error("AI ERROR:", error);
   } finally {
     button.disabled = false;
     button.textContent = "Gửi nhiệm vụ cho AI";
